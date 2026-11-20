@@ -1,4 +1,75 @@
 {
+  "dual_vit_initfix_2026_10_29": {
+    "run_directory": "results_2vit_initfix_20261029_143915",
+    "measurement_source": "complete structured runtime report matched to operator console excerpt",
+    "runner": "defom_2vit_4npu_initfix_20261029",
+    "mode": "board",
+    "golden_profile": "rtl0929-noskip",
+    "corr_device_option": "auto",
+    "pc_postprocess": true,
+    "vit_cores": 2,
+    "backend_npus": 4,
+    "model_iterations": {
+      "scale": 8,
+      "delta": 24
+    },
+    "warmup_check": "PASS",
+    "requested_benchmark_runs": 3,
+    "observed_runs": [
+      {
+        "id": 1,
+        "wall_ms": 2665.125037994585,
+        "postcheck": "PASS",
+        "paired_vit_ms": 141.70558300975244,
+        "su8_du24_ms": 2035.6173790059984,
+        "final_prediction": {
+          "state": "PASS",
+          "elements": 409600,
+          "mismatch_count": 0,
+          "max_abs_error": 0.0,
+          "mean_abs_error": 0.0,
+          "atol": 0.0001
+        }
+      },
+      {
+        "id": 2,
+        "wall_ms": 2721.5217180055333,
+        "postcheck": "MISMATCH",
+        "paired_vit_ms": 141.71955600613728,
+        "su8_du24_ms": 2035.2306610002415,
+        "final_prediction": {
+          "state": "FAIL",
+          "elements": 409600,
+          "mismatch_count": 409526,
+          "max_abs_error": 40.83196258544922,
+          "mean_abs_error": 0.9850830668344861,
+          "atol": 0.0001
+        }
+      }
+    ],
+    "timed_interval": "host-observed stereo-pair inference from frontend start through host convex upsampling, including runtime DMA and first correlation volume on the host",
+    "excluded": [
+      "static preload",
+      "validation warmup",
+      "per-run arming and guard checks",
+      "reference comparisons and file writes"
+    ],
+    "runner_source_sha256": {
+      "run_defom_base.py": "fccbcd14d15cc529efa78668096e492d8d3e93250aa02355b085ef6787d303fb",
+      "benchmark_runtime.py": "9634231ee97bf10a66db766415e786fac91f63a7d04cf0ff1f6e90d72dab7330"
+    },
+    "source_sha256": {
+      "archived_runtime_report_utf8_file": "86861344e72824fda8e6d61144d4c455cf9fb359f1a7ad6571194820f862d2a4"
+    },
+    "state": "MISMATCH",
+    "active_pass": "run2",
+    "vit_left_right_parallel": true,
+    "dpt_left_right_parallel": false,
+    "hardware_access": true,
+    "full_defom_fpga_verified": false,
+    "loaded_bitstream_identity_verified": false,
+    "selected_corr_device": "cpu"
+  },
   "hybrid_2026_10_26": {
     "fpga": "frontend and parallel backend INT8 convolution",
     "host": "correlation, GRU nonlinearities and state, adaptive control, final upsampling",

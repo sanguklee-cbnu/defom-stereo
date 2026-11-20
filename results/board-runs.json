@@ -1,0 +1,159 @@
+{
+  "hybrid_2026_10_26": {
+    "fpga": "frontend and parallel backend INT8 convolution",
+    "host": "correlation, GRU nonlinearities and state, adaptive control, final upsampling",
+    "backend_npus": 4,
+    "logical_conv_checks_per_repetition": 638,
+    "repetitions": [
+      {
+        "id": "warmup1",
+        "state": "PASS",
+        "pair_wall_ms": 16445.088,
+        "fpga_start_to_finish_sum_ms": 1652.33
+      },
+      {
+        "id": "run1",
+        "state": "PASS",
+        "pair_wall_ms": 16079.918,
+        "fpga_start_to_finish_sum_ms": 1652.147
+      },
+      {
+        "id": "run2",
+        "state": "PASS",
+        "pair_wall_ms": 17124.066,
+        "fpga_start_to_finish_sum_ms": 1654.535
+      },
+      {
+        "id": "run3",
+        "state": "PASS",
+        "pair_wall_ms": 16960.315,
+        "fpga_start_to_finish_sum_ms": 1654.274
+      }
+    ],
+    "fastest_measured_trace": {
+      "id": "run1",
+      "records": 655,
+      "hardware_operations": 604,
+      "reused_operations": 51,
+      "core_starts": 2299,
+      "fresh_core_completions": 2299,
+      "backend_execute_seconds": 1.338172432500869
+    },
+    "source_sha256": {
+      "npu_conv_timing.json": "106defed3db966a02d814768365c3938ee0054d743f5f9f2fefbcedd751a1fff",
+      "captured_console_utf8_file": "59f4f53490a15e676fb78c3e93ffdadb28b25b88e06502b688e05bcaffe2801b"
+    }
+  },
+  "frontend_profile": {
+    "scope": "left DINO, feature and head; right DINO and feature",
+    "dpt_npus": 4,
+    "check": "all",
+    "board_verified": true,
+    "runs": [
+      {
+        "id": 1,
+        "state": "PASS",
+        "wall_seconds": 0.5775901279994287
+      },
+      {
+        "id": 2,
+        "state": "PASS",
+        "wall_seconds": 0.5508395230281167
+      },
+      {
+        "id": 3,
+        "state": "PASS",
+        "wall_seconds": 0.5516029819846153
+      }
+    ],
+    "instruction_writes_in_window": 0,
+    "source_sha256": {
+      "summary.json": "3cc7a51b9c7179c319029c93638ff5f373e8af9a8f8a9e7443af5f0a6e76e867"
+    }
+  },
+  "integrated_2026_10_30": {
+    "release": "defom_user_vit_4chip_20261029",
+    "profile": "rtl0929-noskip",
+    "frontend_implementation": "user ViT401 + native DPT4",
+    "frontend_chips": 4,
+    "backend_chips": 4,
+    "hardware_access": true,
+    "state": "MISMATCH",
+    "board_verified": false,
+    "full_defom_fpga_verified": false,
+    "loaded_bitstream_identity_verified": false,
+    "left_right_parallel": false,
+    "tile_skipping": false,
+    "early_stop": false,
+    "golden_injection": false,
+    "first_corr_volume_backend": "pc",
+    "final_softmax_convex_backend": "pc",
+    "active_pass": "validation_warmup",
+    "performance_repetitions": 0,
+    "model_iterations": {
+      "scale": 8,
+      "valid": 24
+    },
+    "validation_main_loop": {
+      "seconds": 2.034917843004223,
+      "timer_scope": "Host-observed completion of every physical NPU, including polling",
+      "irq_counters": [
+        76,
+        76,
+        76,
+        76
+      ],
+      "corr_status": 2,
+      "npu_csr0": [
+        1275068417,
+        1275068417,
+        1275068417,
+        1275068417
+      ]
+    },
+    "initial_layer_outputs": {
+      "state": "PASS",
+      "checked_outputs": 119,
+      "checked_final_outputs": 14,
+      "required_final_outputs": 14,
+      "mismatch_count": 0
+    },
+    "initial_disparity": {
+      "state": "PASS",
+      "elements": 6400,
+      "mismatch_count": 0
+    },
+    "frontend_state": "PASS",
+    "lowres_q8": {
+      "state": "FAIL",
+      "elements": 6400,
+      "mismatch_count": 6171,
+      "max_abs_error": 961.0,
+      "mean_abs_error": 16.19109375,
+      "atol": 0.0,
+      "rtol": 0.0,
+      "actual_sha256": "175929f94e5408c04d42342d2035af9a4762b749956218500135335dae0e0026",
+      "expected_sha256": "ac12a7b4bfad5835a9e2984656b8a02e89054d77dbff0b070fb48ae59d1f3251"
+    },
+    "host_prediction": {
+      "state": "FAIL",
+      "elements": 409600,
+      "mismatch_count": 409465,
+      "max_abs_error": 38.62230682373047,
+      "mean_abs_error": 0.3031613931723405,
+      "atol": 0.0001,
+      "rtol": 0.0,
+      "actual_sha256": "51df926d480980e6c06166c4e2b4b7e520c12eec9591dd0c46f59523f9e8a0eb",
+      "expected_sha256": "f343901b865e400d81e74895d54e04428c556b6c701b317effa4a85226152948"
+    },
+    "host_upsample_factor": 8,
+    "mask_effective_scale": 0.2117108022134135,
+    "board_mask_int8_raw_sha256": "2467e1fe318302a28aa6eb87ac93ada8189a017b4cafc82ad199a828c7a6ff62",
+    "reference_kind": "Selected candidate exact RTL0929 replay with actual board CPU postprocess",
+    "source_sha256": {
+      "summary.json": "767dba72b8a47f73337d9ee339349293acbac6908fa962d456d4d1bf0d33ffb2",
+      "CHECKS.json": "77b69feda18ff199a469671bb4b54d53dba52a42a7aa7f4d09ed8bc0171b27d4",
+      "reference_manifest.json": "17fba2860c4890e7e98e7d5fc5bb62f8381994229700a2e4fc38064519189b83"
+    }
+  }
+}

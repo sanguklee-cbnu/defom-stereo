@@ -1,0 +1,5 @@
+*.pdf binary
+*.npz binary
+
+# Keep the archived, hash-identified RTL byte-for-byte across checkouts.
+hardware/rtl/corr_lookup.v -text -whitespace

@@ -1,13 +1,31 @@
-# DEFOM-Stereo · 시차 추정의 GPU 분석과 FPGA 검증
+# DEFOM-Stereo · FPGA 시차 추정과 GPU 분석
 
 **2026 · 이상욱**  
-좌우 카메라 영상에서 물체까지의 거리를 추정하려면 같은 지점이 두 영상에서 얼마나 어긋나는지, 즉 시차를 구해야 한다. 이 프로젝트에서는 DEFOM-Stereo의 깊이 인코더 입력을 줄였을 때의 속도와 오차를 측정하고, FPGA 이식을 위해 INT8 추론 결과와 하드웨어 연산을 검증했다.
+좌우 카메라 영상에서 물체까지의 거리를 추정하려면 같은 지점이 두 영상에서 얼마나 어긋나는지, 즉 시차를 구해야 한다. 이 프로젝트에서는 DEFOM-Stereo의 전단과 후단 연산을 FPGA에 옮겨 실제 보드가 반환한 시차를 검증했다. GPU에서는 깊이 인코더의 입력 크기와 INT8 보정이 속도와 오차에 미치는 영향을 비교했다.
+
+## FPGA에서 실행한 DEFOM-Stereo
+
+| 실행 구성 | FPGA가 맡은 연산 | 보드에서 확인한 결과 |
+| --- | --- | --- |
+| 10월 26일 · FPGA + CPU 추론 | 좌우 영상의 전단과 후단 INT8 합성곱 | 같은 입력을 3회 실행해 매회 합성곱 출력 638건과 최종 시차 검사 통과. 한 쌍을 처리한 최저 경과시간 **16.080초** |
+| DINO + DPT 전단 측정 | 좌우 DINO, 좌우 특징 추출, 왼쪽 깊이 헤드 | 3회 모두 검증 통과. 전단만 측정한 최저 경과시간 **550.84 ms** |
+| 10월 30일 · 후단 갱신을 FPGA로 확장 | ViT·DPT와 초기화, 4개 NPU의 시차 갱신 32회 | 초기 시차 6,400개 일치. 최종 저해상도 시차는 **6,171/6,400개**가 수치 참조와 달랐다. 갱신 루프 **2.035초** |
+
+10월 26일 구성에서는 PC가 상관관계 계산, GRU의 비선형·상태 갱신, 마지막 업샘플링을 맡았다. 10월 30일 구성에서는 FPGA가 스케일 갱신 8회와 시차 갱신 24회를 완료했고, PC가 첫 상관 볼륨 계산과 마지막 업샘플링을 맡았다. 두 실행은 FPGA가 맡은 연산과 시간을 잰 구간이 다르다.
+
+![10월 30일 4-NPU 보드에서 읽은 저해상도 시차, 호스트가 복원한 시차, 각각의 수치 참조와 차이](assets/fpga-board-readback.png)
+
+10월 30일의 보드 시차는 40행 × 160열이다. 같은 실행에서 읽은 마스크로 PC가 320행 × 1,280열의 시차 영상을 복원했다. 이 영상과 해당 구성의 소프트웨어 수치 참조 사이의 평균 절대 차이는 **0.3032 px**였다.
+
+[보드 실행 기록과 측정 구간](docs/fpga-board-runs.md) · [4개 NPU 실행 제어 코드](board/chip4_control.py) · [보드 출력 배열](results/board-sample.npz) · [실험 요약 PDF](docs/defom-project-brief.pdf)
+
+## KITTI에서 비교한 소프트웨어 예측
 
 ![KITTI 장면 000001_10의 왼쪽 영상, 정답 시차, FP32와 INT8 예측 및 오차 지도](assets/kitti-000001-10.jpg)
 
 **그림을 읽는 법** · 첫 줄은 왼쪽 영상, KITTI 정답, FP32 예측이다. 둘째 줄에서는 INT8 조정 전·후 결과를, 마지막 줄에서는 정답과의 절대 오차를 비교한다. 오차 지도에서 회색은 유효한 정답이 없는 픽셀이다. 이 장면의 평균 시차 오차는 INT8 조정 전 **3.358 px**, 조정 후 **0.797 px**였다. 예측은 하드웨어 산술을 소프트웨어에서 모사해 얻었다. [그림 출처와 사용 조건](docs/experiments.md#sources)
 
-[실험 요약 PDF](docs/defom-project-brief.pdf) · [실행 환경과 측정 조건](docs/experiments.md)
+[KITTI 실행 환경과 측정 조건](docs/experiments.md)
 
 ## 깊이 인코더 입력을 어디까지 줄일 수 있을까?
 
@@ -29,18 +47,19 @@ KITTI 2015 영상에서 Depth Anything의 입력 배율을 1.0–3.5로 바꿔 V
 
 EPE는 장면별 평균에 같은 가중치를 줬다. Out3와 D1은 유효한 정답 픽셀 15,358,905개를 기준으로 계산했다. [장면별 결과](results/kitti-int8-per-image.csv) · [집계 코드](scripts/summarize_int8.py)
 
-## FPGA에서 확인한 연산 범위
+## 블록 단위 진단 코드
 
-- **Correlation lookup** · 첫 시차 갱신의 한 픽셀에서 두 피라미드 레벨의 데이터를 보간하고 INT8로 다시 양자화했다. 유효 채널 18개와 패딩 46바이트를 다시 계산하면 이전 Vivado XSim이 기록한 128비트 출력 네 개와 일치한다. 채널 9에서 이전 참조값 20과 RTL 산술 결과 21이 갈린 지점도 확인할 수 있다. [재현 코드·테스트벤치·입력 벡터](hardware/README.md)
-- **DINO 인코더** · VCU128용 호스트 코드는 PCIe로 패치 임베딩과 첫 인코더 블록의 Q·V·최종 출력을 읽어 참조값과 비교한다. 이 코드는 한 블록의 검증 범위를 보여준다. 전체 DEFOM 파이프라인의 실보드 처리량은 별도 측정 항목이다. [보드 검증 코드](board/dino_block_check.py) · [보드 실행 조건](docs/experiments.md#board)
+- **Correlation lookup RTL** · 첫 delta update의 한 픽셀에서 두 피라미드 레벨의 데이터를 보간하고 INT8로 다시 양자화했다. 유효 채널 18개와 패딩 46바이트를 다시 계산하면 이전 Vivado XSim이 기록한 128비트 출력 네 개와 일치한다. 채널 9에서 이전 참조값 20과 RTL 산술 결과 21이 갈린 지점도 확인할 수 있다. [Verilog 소스·테스트벤치·입력 벡터](hardware/README.md)
+- **DINO 인코더** · VCU128용 호스트 코드는 PCIe로 패치 임베딩과 첫 인코더 블록의 Q·V·최종 출력을 읽어 참조값과 비교한다. 이 코드는 한 블록의 검증 범위를 보여준다. [보드 검증 코드](board/dino_block_check.py) · [보드 실행 조건](docs/experiments.md#board)
 
 ## 바로 확인하기
 
-저장소 루트에서 아래 두 명령을 실행하면 Python 표준 라이브러리만으로 위의 INT8 표와 한 픽셀의 correlation 결과를 재현할 수 있다.
+아래 명령으로 10월 26일의 NPU 채널 배분, 10월 30일의 보드 시차와 호스트 출력을 다시 확인할 수 있다. 보드 배열을 읽는 두 명령은 NumPy가 필요하다.
 
 ```sh
-python scripts/summarize_int8.py
-python hardware/replay_corr.py
+python board/verify_conv_schedule.py
+python scripts/verify_board_readback.py
+python board/replay_upsample.py
 ```
 
 기반 모델은 CVPR 2025의 *DEFOM-Stereo: Depth Foundation Model Based Stereo Matching*이다. [원 논문](https://arxiv.org/abs/2501.09466) · [원 모델 구현](https://github.com/antigravity-tech/DEFOM-Stereo) · [KITTI Stereo 2015](https://www.cvlibs.net/datasets/kitti/eval_scene_flow.php?benchmark=stereo)

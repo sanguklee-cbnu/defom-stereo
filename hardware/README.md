@@ -28,8 +28,31 @@ Channel 9: RTL arithmetic = 21, frozen model = 20.
 | [레벨 0의 입력](fixtures/row0.hex) · [레벨 1의 입력](fixtures/row1.hex) | 이 픽셀의 correlation 행. 각 줄은 signed INT32 값 네 개를 담은 128비트 워드다. |
 | [RTL 연산 규칙의 참조값](fixtures/expected.hex) · [이전 모델의 참조값](fixtures/frozen.hex) | 같은 픽셀의 채널별 출력을 비교하는 원본 바이트열이다. |
 | [XSim 출력](fixtures/xsim_output.hex) | 당시 로그의 `OUTPUT_BEAT_PASS` 네 줄에서 추출한 128비트 출력이다. |
-| [SystemVerilog 테스트벤치](tb_corr_lookup_pixel.sv) | correlation 블록의 포트로 입력을 구동하고, 모의 DDR 응답과 핸드셰이크·출력값을 확인한 당시 벤치다. |
+| [SystemVerilog 테스트벤치](tb_corr_lookup_pixel.sv) | correlation 블록의 포트로 입력을 구동하고, 모의 DDR 응답과 핸드셰이크·출력값을 확인한다. 종료 메시지에 현재 RAM 구성을 표시했다. |
 
-당시 Vivado XSim 실행은 `corr_lookup`의 실제 FSM, 연산부와 RAM을 사용했고 DDR에는 트랜잭션 응답 모델을 연결했다. DDR 요청 2회와 반환 6워드, 출력 4워드가 기록됐다. 해당 RTL의 원본 SHA-256은 `bcfb28e4577932ed2fc3bd9d12a60f19a7ba56f15c4d638d8f3f9fcc05486ec1`이며, 시뮬레이션용 사본은 `interp_cnt` 선언 위치만 조정했다.
+## Vivado XSim에서 RTL 실행
 
-이 예제의 실행 범위는 CPU 정수 연산과 기록 재생이다. SystemVerilog 벤치를 다시 실행하려면 당시 `corr_lookup`와 `SimpleDP_Block_RAM` 소스를 별도로 준비하고 `fixtures` 파일을 시뮬레이터의 작업 디렉터리에 둔다. 전체 NPU, 실제 DDR 및 스테레오 시스템의 보드 처리량은 이 사례의 측정 범위 밖이다.
+Vivado 2022.2 환경에서 저장소 루트를 기준으로 실행한다. 아래 PowerShell 예시는 임시 디렉터리에 입력 벡터와 시뮬레이터 결과를 둔다. Vivado의 `bin` 디렉터리가 PATH에 있어야 한다.
+
+```powershell
+$hardware = (Resolve-Path ./hardware).Path
+$sim = New-Item -ItemType Directory -Path (Join-Path ([IO.Path]::GetTempPath()) ("defom-corr-" + [guid]::NewGuid()))
+Copy-Item "$hardware/fixtures/*.hex" -Destination $sim.FullName
+Push-Location $sim.FullName
+try {
+    xvlog --sv "$hardware/rtl/SimpleDP_Block_RAM.v" "$hardware/rtl/corr_lookup.v" "$hardware/tb_corr_lookup_pixel.sv"
+    if ($LASTEXITCODE) { throw "xvlog failed" }
+    xelab work.tb_corr_lookup_pixel -s corr_portfolio
+    if ($LASTEXITCODE) { throw "xelab failed" }
+    xsim corr_portfolio -runall
+    if ($LASTEXITCODE -or !(Select-String -Path xsim.log -Pattern 'CORR_LOOKUP_PIXEL_PASS' -Quiet)) { throw "XSim did not reach PASS" }
+} finally {
+    Pop-Location
+}
+```
+
+[합성 설계에 쓰인 correlation 연산부의 시뮬레이션용 사본](rtl/corr_lookup.v)을 사용한다. Vivado 프로젝트에서 확인한 원본 SHA-256은 `bcfb28e4577932ed2fc3bd9d12a60f19a7ba56f15c4d638d8f3f9fcc05486ec1`이다. 여기에 담은 사본은 XSim을 위해 `interp_cnt` 선언을 사용 지점 앞으로 옮겼고, SHA-256은 `8b12ba1d45782a21dd86768be827e7757bd03b0eacfbc934035454d69f961730`이다.
+
+2026년 10월 27일 시뮬레이션에서는 프로젝트의 원래 RAM을 사용했다. 이 저장소에서는 같은 포트와 동기 읽기 동작을 구현한 [테스트용 RAM](rtl/SimpleDP_Block_RAM.v)을 연결한다. 현재 테스트벤치는 종료 메시지에 `simulation_RAM_model=1`을 표시한다.
+
+공개용 소스와 입력으로 다시 실행한 결과 780 ns에 `CORR_LOOKUP_PIXEL_PASS`에 도달했다. DDR 요청 2회, 반환 6워드, 출력 4워드를 확인했고, 128비트 출력 네 개가 당시 [XSim 출력 파일](fixtures/xsim_output.hex)과 일치했다. [실제 FPGA에서 측정한 스테레오 결과](../docs/fpga-board-runs.md)

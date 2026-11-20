@@ -99,7 +99,7 @@ module tb_corr_lookup_pixel;
     repeat(10) @(negedge clk);
     if (request_count!=2 || return_count!=6 || channel9_actual!=21)
       $fatal(1,"Incorrect DDR/output coverage requests=%0d returns=%0d ch9=%0d",request_count,return_count,channel9_actual);
-    $display("CORR_LOOKUP_PIXEL_PASS original_FSM=1 original_datapath=1 original_RAM=1 forced_internal_nets=0 pixels=1 valid_INT8_channels=18 padding_channels=46 DDR_requests=2 DDR_return_beats=6 output_beats=4 first_DU_ch9=21 frozen_ch9=20");
+    $display("CORR_LOOKUP_PIXEL_PASS original_FSM=1 original_datapath=1 simulation_RAM_model=1 forced_internal_nets=0 pixels=1 valid_INT8_channels=18 padding_channels=46 DDR_requests=2 DDR_return_beats=6 output_beats=4 first_DU_ch9=21 frozen_ch9=20");
     $finish;
   end
   initial begin #200000; $fatal(1,"Simulation timed out outputs=%0d requests=%0d",output_beats,request_count); end

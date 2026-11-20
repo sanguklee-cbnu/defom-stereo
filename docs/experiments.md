@@ -34,11 +34,17 @@ python evaluate_kitti_profile.py --restore_ckpt ./checkpoints/model.pth --dinov2
 
 전체 200개 장면의 [CSV](../results/kitti-int8-per-image.csv)에서 `backend_calibration_seen=False`인 168개를 선택한다. 각 장면의 EPE는 유효 픽셀에 대한 시차 절대 오차의 평균이다. 표의 EPE는 이 장면별 값을 평균한 결과다. Out3은 절대 오차가 3 px를 초과하는 비율이고, D1은 3 px와 정답 시차의 5%를 모두 초과하는 비율이다. Out3과 D1의 장면별 비율은 유효 픽셀 수로 가중한다. 전단 보정과 후단 미세학습을 함께 적용한 비교이므로 구성 간 차이에는 두 변경의 효과가 모두 들어 있다.
 
-## <a id="board"></a>VCU128 단일 블록 확인
+## <a id="board"></a>VCU128 실측과 검증 범위
 
-[호스트 스크립트](../board/dino_block_check.py)를 실행하려면 해당 비트스트림을 올린 VCU128, PCIe 드라이버, 보드용 Python 모듈 `PCIeAccess`·`NPUv4`, 입력 및 참조 벡터가 필요하다. `DINO_VEC_DIR`에 입력·가중치·양자화 벡터 디렉터리, `DINO_GOLD_DIR`에 참조 출력 디렉터리, `DINO_VERIFY_ROOT`에 결과 덤프 경로를 지정한다. 실행하면 실제 장치에 데이터를 기록한다. 이 초안에서 CPU로 재실행한 하드웨어 관련 검증은 [correlation lookup 사례](../hardware/README.md)다.
+2026년 10월 26일에는 같은 좌·우 영상 한 쌍으로 FPGA와 호스트 CPU를 함께 사용해 최종 시차까지 계산했다. FPGA는 전단과 후단의 병렬 합성곱을, CPU는 correlation, GRU의 비선형·상태 갱신과 최종 업샘플링을 담당했다. 워밍업 1회 뒤 측정한 세 실행은 각각 **16.080초, 17.124초, 16.960초**가 걸렸다. 세 번 모두 합성곱 638건과 최종 출력이 실행 당시의 참조 검사에서 `PASS`였다. 가장 빠른 실행에서 FPGA 작업의 시작부터 완료까지 호스트가 관측한 구간을 합하면 1.652초였다.
+
+별도의 4코어 전단 실험은 좌·우 영상의 전단을 처리하는 구간만 세 번 측정했다. 각 실행은 577.590 ms, 550.840 ms, 551.603 ms였으며 모두 전단 참조 검사를 통과했다. 측정 구간은 첫 좌영상 준비가 끝난 뒤부터 우영상 처리가 끝날 때까지이며, 마지막 출력 스냅샷은 구간 밖이다.
+
+10월 30일에는 타일 생략을 끈 별도 구현에서 스케일 갱신 8회와 시차 변화량 갱신 24회를 보드에서 완료했다. 워밍업 검증 1회의 갱신 루프는 2.035초였다. 초기 시차 6,400개는 소프트웨어 참조와 일치했지만 최종 저해상도 Q8 시차는 6,171개가 달랐다. 최종 업샘플링 출력과 소프트웨어 참조 사이의 평균 절대 차이는 0.3032 px였고, 이 실행의 판정은 `MISMATCH`였다. 위 168장 INT8 지표는 소프트웨어 평가에서 얻었다. [보드 실행별 측정 범위와 출력](fpga-board-runs.md)
+
+DINO 단일 블록을 별도로 점검하려면 해당 비트스트림을 올린 VCU128, PCIe 드라이버, 보드용 Python 모듈 `PCIeAccess`·`NPUv4`, 입력 및 참조 벡터가 필요하다. `DINO_VEC_DIR`에 입력·가중치·양자화 벡터 디렉터리, `DINO_GOLD_DIR`에 참조 출력 디렉터리, `DINO_VERIFY_ROOT`에 결과 덤프 경로를 지정한다. 호스트 스크립트는 실제 장치에 데이터를 기록한다. [DINO 단일 블록 호스트 스크립트](../board/dino_block_check.py) · [CPU에서 실행할 수 있는 correlation lookup 검증](../hardware/README.md)
 
 ## <a id="sources"></a>그림·모델 출처
 
-- **대표 이미지** · KITTI Stereo 2015 학습 분할 장면 `000001_10`의 좌영상·정답 시차 위에 이 프로젝트의 FP32·INT8 예측, 차이 및 오차 지도를 함께 배치했다. 원 데이터는 Moritz Menze와 Andreas Geiger의 *Object Scene Flow for Autonomous Vehicles* (CVPR 2015)에 기반한다. KITTI 파생 비교 이미지에도 CC BY-NC-SA 3.0을 적용한다. [데이터셋](https://www.cvlibs.net/datasets/kitti/eval_scene_flow.php?benchmark=stereo) · [KITTI 저작권·인용 안내](https://www.cvlibs.net/datasets/kitti/) · [이미지 라이선스](https://creativecommons.org/licenses/by-nc-sa/3.0/)
+- **KITTI 소프트웨어 비교 이미지** · KITTI Stereo 2015 학습 분할 장면 `000001_10`의 좌영상·정답 시차 위에 이 프로젝트의 FP32·INT8 예측, 차이 및 오차 지도를 함께 배치했다. 원 데이터는 Moritz Menze와 Andreas Geiger의 *Object Scene Flow for Autonomous Vehicles* (CVPR 2015)에 기반한다. KITTI 파생 비교 이미지에도 CC BY-NC-SA 3.0을 적용한다. [데이터셋](https://www.cvlibs.net/datasets/kitti/eval_scene_flow.php?benchmark=stereo) · [KITTI 저작권·인용 안내](https://www.cvlibs.net/datasets/kitti/) · [이미지 라이선스](https://creativecommons.org/licenses/by-nc-sa/3.0/)
 - **기반 모델** · DEFOM-Stereo의 모델 구현과 원 논문은 원 연구팀의 작업이다. 이 프로젝트의 입력 배율 실험, 양자화 비교, FPGA 연산 검증은 그 위에서 수행했다. [DEFOM-Stereo 원본](https://github.com/antigravity-tech/DEFOM-Stereo) · [원본 트리의 MIT 고지](../LICENSE.upstream)

@@ -1,4 +1,46 @@
 {
+  "user_vit401_4npu_2026_10_29": {
+    "run_directory": "results_user_vit_defom4_20261029_140319",
+    "runner": "defom_user_vit_4chip_20261029",
+    "measurement_source": "Board operator's console transcript, times displayed to three decimal places in milliseconds",
+    "mode": "board",
+    "golden_profile": "rtl0929-noskip",
+    "corr_device_option": "auto",
+    "pc_postprocess": true,
+    "user_vit_cores": 1,
+    "active_tokens_per_image": 401,
+    "vit_left_right_parallel": false,
+    "dpt_npus": 4,
+    "backend_npus": 4,
+    "tile_skipping": false,
+    "early_stop": false,
+    "model_iterations": {"scale": 8, "delta": 24},
+    "warmup_check": "PASS",
+    "requested_benchmark_runs": 3,
+    "observed_runs": [
+      {"id": 1, "wall_ms": 2809.116, "postcheck": "PASS"},
+      {"id": 2, "wall_ms": 2847.427, "postcheck": "PASS"},
+      {"id": 3, "wall_ms": 2823.743, "postcheck": "PASS"}
+    ],
+    "minimum": {
+      "run": 1,
+      "wall_ms": 2809.116,
+      "fpga_completion_observed_ms": 2723.877,
+      "required_host_compute_ms": 50.599,
+      "dma_and_driver_ms": 32.831,
+      "remaining_host_and_control_ms": 1.810,
+      "su8_du24_ms": 2035.940
+    },
+    "timed_interval": "Host-observed elapsed time per stereo pair from frontend start through host softmax and convex upsampling, including required runtime DMA and initial host correlation volume",
+    "excluded": ["static preload", "validation warmup", "per-run arming and guard checks", "post-run reference comparisons and file writes"],
+    "console_excerpt": [
+      "[PASS] 전단·초기 출력·SU8/DU24 최종 수치 / 사후 검증",
+      "[RUN 1/3] 2809.116 ms / 사후 검사 PASS",
+      "[RUN 2/3] 2847.427 ms / 사후 검사 PASS",
+      "[RUN 3/3] 2823.743 ms / 사후 검사 PASS"
+    ],
+    "console_excerpt_sha256_utf8_lf_with_final_newline": "5031ab145fcea3e083ac392c7371cc6c5ca03a8ff2a78f8adb5e5b07c3dd6af7"
+  },
   "dual_vit_initfix_2026_10_29": {
     "run_directory": "results_2vit_initfix_20261029_143915",
     "measurement_source": "complete structured runtime report matched to operator console excerpt",

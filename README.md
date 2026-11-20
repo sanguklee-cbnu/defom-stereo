@@ -14,7 +14,7 @@
 
 전단 시작부터 PC에서 최종 시차를 복원할 때까지 측정했다. 1회차의 전체 시간에는 좌우 ViT, 보드와 PC 사이의 전송, 첫 상관 볼륨 계산, FPGA의 시차 갱신 32회(2,035.940 ms), PC의 최종 업샘플링이 포함된다. 가중치·명령 사전 적재, 워밍업, 회차별 사후 비교는 측정 구간 밖이다.
 
-[실행 기록과 측정 구간](docs/fpga-board-runs.md) · [실험 요약 PDF](docs/defom-project-brief.pdf)
+[DINO ViT Verilog 소스](hardware/dino-vit/README.md) · [FC1 타일 쓰기](hardware/dino-vit/rtl/writeback_controller.v#L2116) · [FC2 타일 읽기](hardware/dino-vit/rtl/vit.v#L255) · [실행 기록과 측정 구간](docs/fpga-board-runs.md) · [실험 요약 PDF](docs/defom-project-brief.pdf)
 
 <details>
 <summary>별도 실험에서 읽은 보드 시차와 재현 코드 (10월 30일)</summary>

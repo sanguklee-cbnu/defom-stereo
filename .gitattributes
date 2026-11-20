@@ -3,3 +3,5 @@
 
 # Keep the archived, hash-identified RTL byte-for-byte across checkouts.
 hardware/rtl/corr_lookup.v -text -whitespace
+hardware/dino-vit/rtl/* -text -whitespace
+hardware/dino-vit/mem/*.mem -text -whitespace
